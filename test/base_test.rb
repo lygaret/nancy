@@ -47,6 +47,15 @@ class BaseTest < Minitest::Test
       session['test'] = "test"
       "session['test'] content is: #{session['test']}"
     end
+
+    post "/protected" do
+      unwind if params["password"].nil?
+      "check password"
+    end
+
+    post "/protected" do
+      "no password provided"
+    end
   end
 
   def app
@@ -107,5 +116,13 @@ class BaseTest < Minitest::Test
   def test_session
     get '/session'
     assert_equal "session['test'] content is: test", last_response.body
+  end
+
+  def test_unwind
+    post '/protected'
+    assert_equal "no password provided", last_response.body
+
+    post '/protected', password: 'password'
+    assert_equal "check password", last_response.body
   end
 end

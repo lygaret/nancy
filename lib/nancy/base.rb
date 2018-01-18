@@ -66,6 +66,10 @@ module Nancy
       request.env["rack.session"] || raise("Rack::Session handler is missing")
     end
 
+    def unwind
+      throw :unwind
+    end
+
     def halt(*res)
       response.status = res.detect{|x| x.is_a?(Fixnum) } || 200
       response.header.merge!(res.detect{|x| x.is_a?(Hash) } || {})
@@ -78,9 +82,11 @@ module Nancy
     def route_eval
       catch(:halt) do
         self.class.route_set[request.request_method].each do |matcher, block|
-          next unless url_params = matcher.params(request.path_info)
-          @params = url_params.merge(params)
-          return action_eval(block)
+          catch(:unwind) do
+            next unless url_params = matcher.params(request.path_info)
+            @params = url_params.merge(params)
+            return action_eval(block)
+          end
         end
         halt 404
       end
